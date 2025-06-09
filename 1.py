@@ -7,16 +7,16 @@ CORS(app)
 
 # MySQL connection config
 db_config = {
-    'host': 'mysql.railway.internal',    
-    'port': 3306,          # or your cloud DB host
+    'host': 'mysql.railway.internal',
+    'port': 3306,
     'user': 'root',
     'password': 'RsWYYEzfWZnaKUQNBdRtKxfLtXOhwTaj',
-    'database': 'railway'            # your MySQL DB name
+    'database': 'railway'
 }
 
 @app.route('/odata/isbn_data', methods=['GET'])
 def get_isbn_data():
-    limit = request.args.get('$top', 1000)  # Salesforce Connect uses $top
+    limit = request.args.get('$top', 1000)
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor(dictionary=True)
 
@@ -31,7 +31,9 @@ def get_isbn_data():
     cursor.close()
     conn.close()
     return jsonify(response)
-    @app.route("/test_connection")
+
+# ✅ Correctly placed test route
+@app.route("/test_connection")
 def test_connection():
     try:
         conn = mysql.connector.connect(**db_config)
@@ -44,7 +46,5 @@ def test_connection():
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
-
