@@ -5,7 +5,6 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# MySQL connection config
 db_config = {
     'host': 'mysql.railway.internal',
     'port': 3306,
@@ -14,35 +13,20 @@ db_config = {
     'database': 'railway'
 }
 
+@app.route('/')
+def home():
+    return "API is online ✅"
+
 @app.route('/odata/isbn_data', methods=['GET'])
 def get_isbn_data():
-    limit = request.args.get('$top', 1000)
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor(dictionary=True)
+    # your existing logic…
 
-    cursor.execute(f"SELECT * FROM isbn_data LIMIT {limit}")
-    rows = cursor.fetchall()
-
-    response = {
-        "@odata.context": "https://yourdomain.com/odata/$metadata#isbn_data",
-        "value": rows
-    }
-
-    cursor.close()
-    conn.close()
-    return jsonify(response)
-
-# ✅ Correctly placed test route
-@app.route("/test_connection")
+@app.route('/test_connection')
 def test_connection():
     try:
         conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute("SELECT NOW()")
-        result = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return {"success": True, "timestamp": result[0]}
+        # test query…
+        return {"success": True, "timestamp": str(result[0])}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
