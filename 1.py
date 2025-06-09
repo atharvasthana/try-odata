@@ -7,11 +7,11 @@ CORS(app)
 
 # MySQL connection config
 db_config = {
-    'host': 'localhost',    
+    'host': 'mysql.railway.internal',    
     'port': 3306,          # or your cloud DB host
     'user': 'root',
-    'password': '12345678',
-    'database': 'isbn'            # your MySQL DB name
+    'password': 'RsWYYEzfWZnaKUQNBdRtKxfLtXOhwTaj',
+    'database': 'railway'            # your MySQL DB name
 }
 
 @app.route('/odata/isbn_data', methods=['GET'])
