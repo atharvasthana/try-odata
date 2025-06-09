@@ -31,6 +31,19 @@ def get_isbn_data():
     cursor.close()
     conn.close()
     return jsonify(response)
+    @app.route("/test_connection")
+def test_connection():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT NOW()")
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return {"success": True, "timestamp": result[0]}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
