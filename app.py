@@ -7,7 +7,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = 'data.db'
+DB_PATH = 'output.db'
 DB_URL = 'https://drive.google.com/uc?export=download&id=1TKXgC9V8e9wuA_88uRmWL9kYuag85S1L'
 
 
