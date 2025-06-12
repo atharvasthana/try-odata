@@ -39,7 +39,7 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-@app.route('/odata/importbook0_1')
+@app.route('/odata/importbook')
 def get_isbn_data():
     top = int(request.args.get('$top', 100))  # Default to 100 records
     conn = get_db_connection()
