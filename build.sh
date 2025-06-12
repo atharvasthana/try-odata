@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "🔽 Downloading output.db from Google Drive..."
-curl -L -o output.db "https://drive.google.com/uc?export=download&id=1TKXgC9V8e9wuA_88uRmWL9kYuag85S1L"
+echo "🔽 Downloading data.sqlite from Google Drive..."
+curl -L -o output.db "https://drive.google.com/file/d/1zf1Otx3Lvfednl1suK7DEZYE8ZCN2YDv/view?usp=sharing"
 echo "✅ Done downloading DB."
