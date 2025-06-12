@@ -5,7 +5,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-DB_FILE = "output.db"  # Already downloaded during build by build.sh
+DB_FILE = "data.sqlite"  # Already downloaded during build by build.sh
 
 # Connect to SQLite DB
 def get_db_connection():
