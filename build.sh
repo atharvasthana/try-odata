@@ -1,4 +1,10 @@
 #!/bin/bash
-echo "🔽 Downloading data.sqlite from Google Drive..."
-curl -L -o data.sqlite "https://drive.google.com/file/d/1zf1Otx3Lvfednl1suK7DEZYE8ZCN2YDv/view?usp=sharing"
-echo "✅ Done downloading DB."
+
+echo "⬇ Downloading books.json from Google Drive..."
+
+FILE_ID="15qWEjGpHmzVWzIaQwy8AgUOqRAV38kxr"
+OUTPUT_FILE="books.json"
+
+curl -L -o "$OUTPUT_FILE" "https://drive.google.com/uc?export=download&id=${FILE_ID}"
+
+echo "✅ books.json downloaded successfully!"
