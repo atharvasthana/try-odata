@@ -1,63 +1,52 @@
-import sqlite3
+import json
 from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
-DB_FILE = "data.sqlite"  # Already downloaded during build by build.sh
+# ✅ Load books.json data
+with open('books.json', 'r', encoding='utf-8') as f:
+    books = json.load(f)
 
-# Connect to SQLite DB
-def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
+# ✅ $metadata endpoint
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
 <edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
   <edmx:DataServices>
-    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="IsbnModel">
-      <EntityType Name="importbook0_1">
-        <Key><PropertyRef Name="id"/></Key>
-        <Property Name="id" Type="Edm.Int32" Nullable="false"/>
-        <Property Name="COL 1" Type="Edm.String"/>
-        <Property Name="COL 2" Type="Edm.String"/>
-        <Property Name="COL 3" Type="Edm.String"/>
-        <Property Name="COL 4" Type="Edm.String"/>
-        <Property Name="COL 5" Type="Edm.String"/>
-        <Property Name="COL 6" Type="Edm.String"/>
-        <Property Name="COL 7" Type="Edm.String"/>
-        <Property Name="COL 8" Type="Edm.String"/>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="BookModel">
+      <EntityType Name="ISBN_IDB__c">
+        <Key><PropertyRef Name="Name"/></Key>
+        <Property Name="Name" Type="Edm.String" Nullable="false"/>
+        <Property Name="Title__c" Type="Edm.String"/>
+        <Property Name="Author__c" Type="Edm.String"/>
+        <Property Name="Publish_Date__c" Type="Edm.Date"/>
+        <Property Name="Number_of_Pages__c" Type="Edm.Int32"/>
+        <Property Name="Cover_Image__c" Type="Edm.String"/>
+        <Property Name="Publisher__c" Type="Edm.String"/>
       </EntityType>
       <EntityContainer Name="Container">
-        <EntitySet Name="importbook0_1" EntityType="IsbnModel.importbook0_1"/>
+        <EntitySet Name="ISBN_IDB__c" EntityType="BookModel.ISBN_IDB__c"/>
       </EntityContainer>
     </Schema>
   </edmx:DataServices>
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-@app.route('/odata/importbook0_1')
-def get_isbn_data():
-    top = int(request.args.get('$top', 100))  # Default to 100 records
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM importbook0_1 LIMIT ?", (top,))
-    rows = cursor.fetchall()
-    conn.close()
-
-    result = [dict(row) for row in rows]
-
+# ✅ Data endpoint
+@app.route('/odata/ISBN_IDB__c')
+def get_books():
+    top = int(request.args.get('$top', 100))
     return jsonify({
-        "@odata.context": request.url_root.rstrip('/') + "/odata/$metadata#importbook0_1",
-        "value": result
+        "@odata.context": request.url_root.rstrip('/') + "/odata/$metadata#ISBN_IDB__c",
+        "value": books[:top]
     })
 
+# ✅ Root check
 @app.route('/')
 def home():
-    return "✅ OData API is running using output.db from Google Drive (fetched during build.sh)!"
+    return "✅ JSON-based OData API is live for Salesforce Connect!"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
