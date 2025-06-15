@@ -9,7 +9,7 @@ CORS(app)
 with open('datanew.json', 'r', encoding='utf-8') as f:
     books = json.load(f)
 
-# ✅ OData metadata for Salesforce
+# ✅ OData $metadata endpoint for Salesforce Connect
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -34,16 +34,19 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-# ✅ Data Endpoint
+# ✅ Data Endpoint with pagination support
 @app.route('/odata/ISBN')
 def get_books():
-    top = int(request.args.get('$top', 100))  # default to 100
+    top = int(request.args.get('$top', 100))
+    skip = int(request.args.get('$skip', 0))
+    paginated = books[skip: skip + top]
+
     return jsonify({
         "@odata.context": request.url_root.rstrip('/') + "/odata/$metadata#ISBN",
-        "value": books[:top]
+        "value": paginated
     })
 
-# ✅ Root Health Check
+# ✅ Root check
 @app.route('/')
 def home():
     return "✅ JSON-based OData API is live and ready for Salesforce Connect!"
