@@ -6,7 +6,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ✅ Load books.json data
-with open('books.json', 'r', encoding='utf-8') as f:
+with open('datanew.json', 'r', encoding='utf-8') as f:
     books = json.load(f)
 
 # ✅ $metadata endpoint
