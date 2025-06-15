@@ -12,25 +12,27 @@ with open('datanew.json', 'r', encoding='utf-8') as f:
 # ✅ OData metadata for Salesforce
 @app.route('/odata/$metadata')
 def metadata():
-    xml = '''<?xml version="1.0" encoding="utf-8"?>
+   xml = '''<?xml version="1.0" encoding="utf-8"?>
 <edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
-  <edmx:DataServices>
-    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="BookModel">
-      <EntityType Name="ISBN">
-        <Key><PropertyRef Name="Name"/></Key>
-        <Property Name="Name" Type="Edm.String" Nullable="false"/>
-        <Property Name="Title" Type="Edm.String"/>
-        <Property Name="Author" Type="Edm.String"/>
-        <Property Name="PublishDate" Type="Edm.String"/>
-        <Property Name="NumberofPages" Type="Edm.Int32"/>
-        <Property Name="CoverImage" Type="Edm.String"/>
-        <Property Name="Publisher" Type="Edm.String"/>
-      </EntityType>
-      <EntityContainer Name="Container">
-        <EntitySet Name="ISBN" EntityType="BookModel.ISBN"/>
-      </EntityContainer>
-    </Schema>
-  </edmx:DataServices>
+ <edmx:DataServices>
+  <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="BookModel">
+    <EntityType Name="ISBN">
+      <Key><PropertyRef Name="Serial"/></Key>
+      <Property Name="Serial" Type="Edm.Int32" Nullable="false"/>
+      <Property Name="Title" Type="Edm.String"/>
+      <Property Name="Author" Type="Edm.String"/>
+      <Property Name="PublishDate" Type="Edm.String"/>
+      <Property Name="NumberofPages" Type="Edm.Int32"/>
+      <Property Name="CoverImage" Type="Edm.String"/>
+      <Property Name="Publisher" Type="Edm.String"/>
+    </EntityType>
+
+    <EntityContainer Name="Container">
+      <EntitySet Name="ISBN" EntityType="BookModel.ISBN"/>
+    </EntityContainer>
+  </Schema>
+</edmx:DataServices>
+
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
