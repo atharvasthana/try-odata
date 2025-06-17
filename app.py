@@ -1,14 +1,16 @@
 import json
 from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
+from urllib.parse import unquote
 
 app = Flask(__name__)
 CORS(app)
 
-# Load JSON data
+# ✅ Load JSON data
 with open('datanew.json', 'r', encoding='utf-8') as f:
     books = json.load(f)
 
+# ✅ OData $metadata endpoint for Salesforce Connect
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -33,31 +35,37 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
+
+# ✅ Data endpoint with $top, $skip, $filter
 @app.route('/odata/ISBN')
 def get_books():
     top = int(request.args.get('$top', 100))
     skip = int(request.args.get('$skip', 0))
-    filter_param = request.args.get('$filter')
+    filter_query = request.args.get('$filter')
 
     filtered_books = books
 
-    if filter_param:
+    # Optional filter parsing
+    if filter_query:
         try:
-            # Basic support for filters like: Title eq 'xyz' AND Author eq 'abc'
-            conditions = [cond.strip() for cond in filter_param.split('and')]
-            for condition in conditions:
-                field, op, value = condition.split(' ', 2)
-                field = field.strip()
-                op = op.strip()
-                value = value.strip().strip("'")
+            field, _, value = filter_query.partition(" eq ")
+            field = field.strip()
+            value = unquote(value.strip().strip("'").strip('"'))
 
-                if op == 'eq':
-                    if field == "Serial" or field == "NumberofPages":
-                        value = int(value)
-                    filtered_books = [b for b in filtered_books if str(b.get(field)) == str(value)]
+            # OData field to JSON key mapping
+            field_map = {
+                "Serial": "Serial",
+                "Title": "Title",
+                "Author": "Author",
+                "PublishDate": "PublishDate",
+                "Publisher": "Publisher"
+            }
 
+            json_field = field_map.get(field)
+            if json_field:
+                filtered_books = [b for b in books if str(b.get(json_field, "")).strip().lower() == value.lower()]
         except Exception as e:
-            print("⚠️ Filter parse error:", e)
+            print("⚠️ Filter error:", e)
 
     paginated = filtered_books[skip: skip + top]
 
@@ -66,9 +74,11 @@ def get_books():
         "value": paginated
     })
 
+
+# ✅ Root
 @app.route('/')
 def home():
-    return "✅ JSON-based OData API with multi-field filter support is live!"
+    return "✅ JSON-based OData API is live and filter-ready for Salesforce Connect!"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
