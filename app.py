@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ✅ Load JSON data
-with open('datanew.json', 'r', encoding='utf-8') as f:
+with open('new.json', 'r', encoding='utf-8') as f:
     books = json.load(f)
 
 # ✅ OData $metadata endpoint for Salesforce Connect
