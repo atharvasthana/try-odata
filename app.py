@@ -19,7 +19,7 @@ def metadata():
     <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="BookModel">
       <EntityType Name="ISBN">
         <Key><PropertyRef Name="Serial"/></Key>
-        <Property Name="Serial" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Serial" Type="Edm.String" Nullable="false"/>
         <Property Name="Title" Type="Edm.String"/>
         <Property Name="Author" Type="Edm.String"/>
         <Property Name="PublishDate" Type="Edm.String"/>
