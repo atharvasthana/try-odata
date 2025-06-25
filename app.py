@@ -1,4 +1,5 @@
 import json
+import os
 from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 from urllib.parse import unquote
@@ -6,11 +7,26 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Load JSON data
-with open('cleaned.json', 'r', encoding='utf-8') as f:
-    books = json.load(f)
+# === ✅ Safe JSON Load ===
+books = []
+json_path = 'cleaned.json'
 
-# ✅ OData $metadata endpoint for Salesforce Connect
+if os.path.exists(json_path) and os.path.getsize(json_path) > 0:
+    with open(json_path, 'r', encoding='utf-8') as f:
+        head = f.read(500)
+        if '<html' in head.lower():
+            print("❌ cleaned.json contains HTML, not JSON.")
+        else:
+            try:
+                f.seek(0)
+                books = json.load(f)
+                print(f"✅ Loaded {len(books)} book records from cleaned.json")
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error: {e}")
+else:
+    print("⚠️ cleaned.json is missing or empty.")
+
+# === ✅ OData Metadata ===
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -35,8 +51,7 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-
-# ✅ Data endpoint with $top, $skip, $filter
+# === ✅ OData EntitySet Endpoint ===
 @app.route('/odata/ISBN')
 def get_books():
     top = int(request.args.get('$top', 100))
@@ -45,14 +60,13 @@ def get_books():
 
     filtered_books = books
 
-    # Optional filter parsing
+    # Apply filter if present
     if filter_query:
         try:
             field, _, value = filter_query.partition(" eq ")
             field = field.strip()
             value = unquote(value.strip().strip("'").strip('"'))
 
-            # OData field to JSON key mapping
             field_map = {
                 "Serial": "Serial",
                 "Title": "Title",
@@ -63,7 +77,9 @@ def get_books():
 
             json_field = field_map.get(field)
             if json_field:
-                filtered_books = [b for b in books if str(b.get(json_field, "")).strip().lower() == value.lower()]
+                filtered_books = [
+                    b for b in books if str(b.get(json_field, "")).strip().lower() == value.lower()
+                ]
         except Exception as e:
             print("⚠️ Filter error:", e)
 
@@ -74,11 +90,11 @@ def get_books():
         "value": paginated
     })
 
-
-# ✅ Root
+# === ✅ Root Route ===
 @app.route('/')
 def home():
     return "✅ JSON-based OData API is live and filter-ready for Salesforce Connect!"
 
+# === ✅ Start App ===
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
