@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 from urllib.parse import unquote
@@ -7,26 +8,63 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CORS(app)
 
-# === ✅ Safe JSON Load ===
 books = []
 json_path = 'cleaned.json'
 
-if os.path.exists(json_path) and os.path.getsize(json_path) > 0:
-    with open(json_path, 'r', encoding='utf-8') as f:
-        head = f.read(500)
-        if '<html' in head.lower():
-            print("❌ cleaned.json contains HTML, not JSON.")
-        else:
-            try:
+
+# === ✅ Google Drive Download Function ===
+def download_cleaned_json():
+    url = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
+    print("📥 Downloading cleaned.json from Google Drive...")
+
+    response = session.get(url, params={'id': gdrive_file_id}, stream=True)
+    token = get_confirm_token(response)
+    if token:
+        print("🔐 Large file detected, using confirm token...")
+        response = session.get(url, params={'id': gdrive_file_id, 'confirm': token}, stream=True)
+
+    with open(json_path, "wb") as f:
+        for chunk in response.iter_content(32768):
+            if chunk:
+                f.write(chunk)
+
+    print("✅ cleaned.json downloaded.")
+
+def get_confirm_token(response):
+    for k, v in response.cookies.items():
+        if k.startswith('download_warning'):
+            return v
+    return None
+
+# === ✅ Safe Load of JSON Data ===
+def load_books():
+    global books
+    if not os.path.exists(json_path) or os.path.getsize(json_path) < 100000:
+        try:
+            download_cleaned_json()
+        except Exception as e:
+            print(f"❌ Failed to download JSON: {e}")
+            return
+
+    if os.path.exists(json_path) and os.path.getsize(json_path) > 0:
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                head = f.read(500)
+                if '<html' in head.lower():
+                    print("❌ cleaned.json contains HTML, not JSON.")
+                    return
                 f.seek(0)
                 books = json.load(f)
-                print(f"✅ Loaded {len(books)} book records from cleaned.json")
-            except json.JSONDecodeError as e:
-                print(f"❌ JSON decode error: {e}")
-else:
-    print("⚠️ cleaned.json is missing or empty.")
+                print(f"✅ Loaded {len(books)} book records.")
+        except Exception as e:
+            print(f"❌ Failed to load JSON: {e}")
+    else:
+        print("⚠️ cleaned.json is still missing or invalid.")
 
-# === ✅ OData Metadata ===
+load_books()
+
+# === ✅ OData Metadata Endpoint ===
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -60,7 +98,7 @@ def get_books():
 
     filtered_books = books
 
-    # Apply filter if present
+    # Apply OData-style filter
     if filter_query:
         try:
             field, _, value = filter_query.partition(" eq ")
@@ -90,11 +128,11 @@ def get_books():
         "value": paginated
     })
 
-# === ✅ Root Route ===
+# === ✅ Home Route ===
 @app.route('/')
 def home():
-    return "✅ JSON-based OData API is live and filter-ready for Salesforce Connect!"
+    return "✅ JSON-based OData API is live, robust, and filter-ready for Salesforce Connect!"
 
-# === ✅ Start App ===
+# === ✅ Start Server ===
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
