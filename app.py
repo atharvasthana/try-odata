@@ -10,40 +10,37 @@ CORS(app)
 
 books = []
 json_path = 'cleaned.json'
-gdrive_file_id = '1_qeCM87wBablojyusQe8B7-ehADjE9E-'
 
+# === ✅ OneDrive Download Function ===
+def download_from_onedrive():
+    url = "https://1drv.ms/u/c/61ea018d128f53a9/ESES_6JfhepIp4PQVAAUDI4BsyPWtY-tE_ZOO-VsPPuzaQ?e=BgOnF9"
+    local_filename = json_path
+    print("📥 Downloading from OneDrive...")
 
-# === ✅ Google Drive Download Function ===
-def download_cleaned_json():
-    url = "https://docs.google.com/uc?export=download"
     session = requests.Session()
-    print("📥 Downloading cleaned.json from Google Drive...")
+    response = session.get(url, allow_redirects=True, stream=True)
 
-    response = session.get(url, params={'id': gdrive_file_id}, stream=True)
-    token = get_confirm_token(response)
-    if token:
-        print("🔐 Large file detected, using confirm token...")
-        response = session.get(url, params={'id': gdrive_file_id, 'confirm': token}, stream=True)
+    # Follow redirect if present
+    if response.status_code in [301, 302]:
+        redirect_url = response.headers.get("Location")
+        print("🔀 Following redirect to final download URL...")
+        response = session.get(redirect_url, stream=True)
 
-    with open(json_path, "wb") as f:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
+    if response.status_code == 200:
+        with open(local_filename, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=32768):
+                if chunk:
+                    f.write(chunk)
+        print("✅ cleaned.json downloaded from OneDrive.")
+    else:
+        print(f"❌ Download failed: HTTP {response.status_code}")
 
-    print("✅ cleaned.json downloaded.")
-
-def get_confirm_token(response):
-    for k, v in response.cookies.items():
-        if k.startswith('download_warning'):
-            return v
-    return None
-
-# === ✅ Safe Load of JSON Data ===
+# === ✅ Safe JSON Load ===
 def load_books():
     global books
     if not os.path.exists(json_path) or os.path.getsize(json_path) < 100000:
         try:
-            download_cleaned_json()
+            download_from_onedrive()
         except Exception as e:
             print(f"❌ Failed to download JSON: {e}")
             return
@@ -129,7 +126,7 @@ def get_books():
         "value": paginated
     })
 
-# === ✅ Home Route ===
+# === ✅ Root Route ===
 @app.route('/')
 def home():
     return "✅ JSON-based OData API is live, robust, and filter-ready for Salesforce Connect!"
