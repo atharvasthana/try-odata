@@ -10,40 +10,56 @@ CORS(app)
 
 books = []
 json_path = 'cleaned.json'
+mediafire_url = 'https://www.mediafire.com/file/ck09b4e20zr50ez/cleaned.json/file'
 
-# === ✅ OneDrive Download Function ===
-def download_from_onedrive():
-    url = "https://1drv.ms/u/c/61ea018d128f53a9/ESES_6JfhepIp4PQVAAUDI4BsyPWtY-tE_ZOO-VsPPuzaQ?e=BgOnF9"
-    local_filename = json_path
-    print("📥 Downloading from OneDrive...")
 
-    session = requests.Session()
-    response = session.get(url, allow_redirects=True, stream=True)
+# ✅ Download cleaned.json from MediaFire
+def download_from_mediafire():
+    print("📥 Downloading from MediaFire...")
 
-    # Follow redirect if present
-    if response.status_code in [301, 302]:
-        redirect_url = response.headers.get("Location")
-        print("🔀 Following redirect to final download URL...")
-        response = session.get(redirect_url, stream=True)
+    try:
+        session = requests.Session()
+        response = session.get(mediafire_url, allow_redirects=True)
+        if response.status_code != 200:
+            print(f"❌ Failed to reach MediaFire page: {response.status_code}")
+            return
 
-    if response.status_code == 200:
-        with open(local_filename, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=32768):
-                if chunk:
-                    f.write(chunk)
-        print("✅ cleaned.json downloaded from OneDrive.")
-    else:
-        print(f"❌ Download failed: HTTP {response.status_code}")
+        # Follow actual download redirect
+        redirect_url = response.url.replace('/file/', '/download/')
+        download_page = session.get(redirect_url)
+        if 'href="' not in download_page.text:
+            print("❌ Couldn't extract real download URL.")
+            return
 
-# === ✅ Safe JSON Load ===
+        # Extract the real file URL from the download page
+        import re
+        match = re.search(r'href="(https://download[^"]+)"', download_page.text)
+        if not match:
+            print("❌ Failed to parse direct download URL.")
+            return
+
+        real_url = match.group(1)
+        print(f"➡️ Real download URL: {real_url}")
+
+        file_response = session.get(real_url, stream=True)
+        if file_response.status_code == 200:
+            with open(json_path, 'wb') as f:
+                for chunk in file_response.iter_content(32768):
+                    if chunk:
+                        f.write(chunk)
+            print("✅ cleaned.json downloaded from MediaFire.")
+        else:
+            print(f"❌ Download failed: {file_response.status_code}")
+
+    except Exception as e:
+        print(f"❌ Exception while downloading: {e}")
+
+
+# ✅ Safe JSON loader
 def load_books():
     global books
     if not os.path.exists(json_path) or os.path.getsize(json_path) < 100000:
-        try:
-            download_from_onedrive()
-        except Exception as e:
-            print(f"❌ Failed to download JSON: {e}")
-            return
+        download_from_mediafire()
 
     if os.path.exists(json_path) and os.path.getsize(json_path) > 0:
         try:
@@ -60,9 +76,11 @@ def load_books():
     else:
         print("⚠️ cleaned.json is still missing or invalid.")
 
+
 load_books()
 
-# === ✅ OData Metadata Endpoint ===
+
+# ✅ OData $metadata endpoint
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -87,7 +105,8 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-# === ✅ OData EntitySet Endpoint ===
+
+# ✅ OData main data endpoint
 @app.route('/odata/ISBN')
 def get_books():
     top = int(request.args.get('$top', 100))
@@ -96,13 +115,11 @@ def get_books():
 
     filtered_books = books
 
-    # Apply OData-style filter
     if filter_query:
         try:
             field, _, value = filter_query.partition(" eq ")
             field = field.strip()
             value = unquote(value.strip().strip("'").strip('"'))
-
             field_map = {
                 "Serial": "Serial",
                 "Title": "Title",
@@ -110,7 +127,6 @@ def get_books():
                 "PublishDate": "PublishDate",
                 "Publisher": "Publisher"
             }
-
             json_field = field_map.get(field)
             if json_field:
                 filtered_books = [
@@ -120,17 +136,17 @@ def get_books():
             print("⚠️ Filter error:", e)
 
     paginated = filtered_books[skip: skip + top]
-
     return jsonify({
         "@odata.context": request.url_root.rstrip('/') + "/odata/$metadata#ISBN",
         "value": paginated
     })
 
-# === ✅ Root Route ===
+
+# ✅ Root health check
 @app.route('/')
 def home():
-    return "✅ JSON-based OData API is live, robust, and filter-ready for Salesforce Connect!"
+    return "✅ JSON-based OData API is live, filter-ready, and using MediaFire as source!"
 
-# === ✅ Start Server ===
+# ✅ Start server
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
