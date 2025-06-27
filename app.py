@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import requests
 import ijson
 from flask import Flask, jsonify, Response, request
@@ -12,6 +13,7 @@ CORS(app)
 json_path = 'cleaned.json'
 mediafire_url = 'https://www.mediafire.com/file/ck09b4e20zr50ez/cleaned.json/file'
 
+# === ✅ Download from MediaFire ===
 def download_from_mediafire():
     print("📥 Downloading from MediaFire...")
     try:
@@ -20,7 +22,7 @@ def download_from_mediafire():
 
         redirect_url = response.url.replace('/file/', '/download/')
         download_page = session.get(redirect_url)
-        import re
+
         match = re.search(r'href="(https://download[^"]+)"', download_page.text)
         if not match:
             print("❌ Failed to parse direct download URL.")
@@ -38,26 +40,9 @@ def download_from_mediafire():
         else:
             print("❌ Download failed:", file_response.status_code)
     except Exception as e:
-        print("❌ Error:", e)
+        print("❌ MediaFire Error:", e)
 
-# ✅ Streaming function with ijson
-def stream_books():
-    if not os.path.exists(json_path) or os.path.getsize(json_path) < 100000:
-        download_from_mediafire()
-
-    if not os.path.exists(json_path):
-        print("❌ JSON file missing.")
-        return []
-
-    print("📂 Streaming data with ijson...")
-    try:
-        with open(json_path, 'r', encoding='utf-8') as f:
-            return list(ijson.items(f, 'item'))  # Top-level JSON must be a list
-    except Exception as e:
-        print("❌ Error streaming JSON:", e)
-        return []
-
-# No preloading to avoid memory use
+# === ✅ OData Metadata ===
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -82,34 +67,52 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
+# === ✅ OData Entity Endpoint ===
 @app.route('/odata/ISBN')
 def get_books():
     top = int(request.args.get('$top', 100))
     skip = int(request.args.get('$skip', 0))
     filter_query = request.args.get('$filter')
 
+    if not os.path.exists(json_path) or os.path.getsize(json_path) < 100000:
+        download_from_mediafire()
+
+    if not os.path.exists(json_path):
+        return jsonify({"error": "JSON file not available"}), 500
+
     filtered_books = []
-    count = 0
     matched = 0
 
-    for book in stream_books():
-        if filter_query:
-            try:
-                field, _, value = filter_query.partition(" eq ")
-                field = field.strip()
-                value = unquote(value.strip().strip("'").strip('"'))
+    # Field mapping (OData to JSON keys)
+    field_map = {
+        "Serial": "Serial",
+        "Title": "Title",
+        "Author": "Author",
+        "PublishDate": "PublishDate",
+        "Publisher": "Publisher"
+    }
 
-                if field in book and str(book.get(field, "")).strip().lower() != value.lower():
+    filter_field = filter_value = None
+    if filter_query:
+        try:
+            raw_field, _, raw_value = filter_query.partition(" eq ")
+            filter_field = field_map.get(raw_field.strip())
+            filter_value = unquote(raw_value.strip().strip("'").strip('"')).lower()
+        except Exception as e:
+            print("⚠️ Filter parse error:", e)
+
+    with open(json_path, 'r', encoding='utf-8') as f:
+        for book in ijson.items(f, 'item'):
+            if filter_field and filter_field in book:
+                value = str(book.get(filter_field, "")).strip().lower()
+                if value != filter_value:
                     continue
-            except Exception as e:
-                print("⚠️ Filter error:", e)
-                continue
 
-        if matched >= skip + top:
-            break
-        if matched >= skip:
-            filtered_books.append(book)
-        matched += 1
+            if matched >= skip + top:
+                break
+            if matched >= skip:
+                filtered_books.append(book)
+            matched += 1
 
     return jsonify({
         "@odata.context": request.url_root.rstrip('/') + "/odata/$metadata#ISBN",
@@ -118,7 +121,7 @@ def get_books():
 
 @app.route('/')
 def home():
-    return "✅ Streamed OData API is live — memory efficient and MediaFire ready!"
+    return "✅ OData API (Streaming, Filterable, MediaFire-backed) is Live!"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
