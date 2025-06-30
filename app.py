@@ -11,7 +11,7 @@ CORS(app)
 
 # === Configuration ===
 DB_PATH = 'books.db'
-GOOGLE_DRIVE_DB_URL = "https://drive.google.com/uc?export=download&id=1PXizbRqTc9oYyMY_24bX1CfBvQSsqpf6"
+GOOGLE_DRIVE_DB_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"
 
 # === Download DB if not present ===
 def download_db_if_missing():
