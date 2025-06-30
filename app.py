@@ -11,28 +11,16 @@ CORS(app)
 
 # === Configuration ===
 DB_PATH = 'books.db'
-MEDIAFIRE_DB_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"  # Replace with your actual MediaFire file link
+GOOGLE_DRIVE_DB_URL = "https://drive.google.com/uc?export=download&id=1PXizbRqTc9oYyMY_24bX1CfBvQSsqpf6"
 
 # === Download DB if not present ===
 def download_db_if_missing():
     if os.path.exists(DB_PATH):
         return
 
-    print("📥 Downloading books.db from MediaFire...")
+    print("📥 Downloading books.db from Google Drive...")
     try:
-        session = requests.Session()
-        response = session.get(MEDIAFIRE_DB_URL, allow_redirects=True)
-
-        # Convert to download link
-        redirect_url = response.url.replace('/file/', '/download/')
-        download_page = session.get(redirect_url)
-
-        match = re.search(r'href="(https://download[^"]+)"', download_page.text)
-        if not match:
-            raise Exception("❌ Could not find real download URL on MediaFire.")
-
-        real_url = match.group(1)
-        r = session.get(real_url, stream=True)
+        r = requests.get(GOOGLE_DRIVE_DB_URL, stream=True, timeout=60)
         if r.status_code == 200:
             with open(DB_PATH, 'wb') as f:
                 for chunk in r.iter_content(32768):
@@ -44,7 +32,7 @@ def download_db_if_missing():
         print(f"🔥 Failed to download books.db: {e}")
         exit(1)
 
-# === SQLite Query Helper ===
+# === SQLite Helper ===
 def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -121,12 +109,10 @@ def metadata():
 </edmx:Edmx>'''
     return Response(xml, mimetype='application/xml')
 
-# === Home ===
 @app.route('/')
 def home():
-    return "✅ OData API using SQLite is live — auto-download from MediaFire enabled!"
+    return "✅ OData API using SQLite is live — with Google Drive auto-download!"
 
-# === Run Server ===
 if __name__ == '__main__':
     download_db_if_missing()
     app.run(host='0.0.0.0', port=10000)
