@@ -11,7 +11,7 @@ CORS(app)
 
 # === Configuration ===
 DB_PATH = 'books.db'
-MEDIAFIRE_DB_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"  # 🔁 Replace this with your real MediaFire link
+MEDIAFIRE_DB_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"  # Replace with your actual MediaFire file link
 
 # === Download DB if not present ===
 def download_db_if_missing():
@@ -44,7 +44,7 @@ def download_db_if_missing():
         print(f"🔥 Failed to download books.db: {e}")
         exit(1)
 
-# === SQLite Helper ===
+# === SQLite Query Helper ===
 def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -126,7 +126,7 @@ def metadata():
 def home():
     return "✅ OData API using SQLite is live — auto-download from MediaFire enabled!"
 
-# === Run App ===
+# === Run Server ===
 if __name__ == '__main__':
     download_db_if_missing()
     app.run(host='0.0.0.0', port=10000)
