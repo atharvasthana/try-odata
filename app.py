@@ -10,21 +10,21 @@ app = Flask(__name__)
 CORS(app)
 
 DB_PATH = 'books.db'
-MEDIAFIRE_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"
-  # ✅ Replace with your actual MediaFire link
+MEDIAFIRE_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"  # ✅ Use your MediaFire file link
 
+# === Auto-download books.db if missing ===
 def download_db_if_missing():
     if os.path.exists(DB_PATH):
         return
-    print("📥 Downloading books.db from MediaFire...")
 
+    print("📥 Downloading books.db from MediaFire...")
     try:
         session = requests.Session()
         page = session.get(MEDIAFIRE_URL)
         direct_link_url = page.url.replace("/file/", "/download/")
         download_page = session.get(direct_link_url)
-        match = re.search(r'href="(https://download[^"]+)"', download_page.text)
 
+        match = re.search(r'href="(https://download[^"]+)"', download_page.text)
         if not match:
             raise Exception("❌ Could not find direct download link.")
 
@@ -36,11 +36,12 @@ def download_db_if_missing():
                     f.write(chunk)
             print("✅ books.db downloaded successfully.")
         else:
-            raise Exception(f"❌ Download failed: {r.status_code}")
+            raise Exception(f"❌ Download failed with status {r.status_code}")
     except Exception as e:
         print(f"🔥 Failed to download books.db: {e}")
         exit(1)
 
+# === SQLite Query ===
 def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -50,8 +51,8 @@ def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     params = []
 
     if filter_field and filter_value:
-        query += f" WHERE LOWER({filter_field}) = ?"
-        params.append(filter_value.lower())
+        query += f" WHERE LOWER({filter_field}) = LOWER(?)"
+        params.append(filter_value)
 
     query += " LIMIT ? OFFSET ?"
     params.extend([top, skip])
@@ -61,6 +62,7 @@ def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     conn.close()
     return [dict(row) for row in rows]
 
+# === OData Endpoint ===
 @app.route('/odata/ISBN')
 def get_books():
     top = int(request.args.get('$top', 100))
@@ -90,6 +92,7 @@ def get_books():
         "value": result
     })
 
+# === OData Metadata ===
 @app.route('/odata/$metadata')
 def metadata():
     xml = '''<?xml version="1.0" encoding="utf-8"?>
@@ -118,6 +121,7 @@ def metadata():
 def home():
     return "✅ SQLite OData API with MediaFire auto-download is live!"
 
+# === Start ===
 if __name__ == '__main__':
     download_db_if_missing()
     app.run(host='0.0.0.0', port=10000)
