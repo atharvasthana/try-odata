@@ -9,8 +9,8 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = 'books.db'
-MEDIAFIRE_URL = "https://www.mediafire.com/file/z28tvate66crxmh/books.db/file"  # ✅ Use your MediaFire file link
+DB_PATH = 'book.db'
+MEDIAFIRE_URL = 'https://www.mediafire.com/file/t9s45tsy496j5ov/book.db/file'  # ✅ Use your MediaFire file link
 
 # === Auto-download books.db if missing ===
 def download_db_if_missing():
@@ -70,7 +70,7 @@ def get_books():
     filter_query = request.args.get('$filter')
 
     field_map = {
-        "Serial": "Serial",
+        "ISBN_EX": "ISBN_EX",
         "Title": "Title",
         "Author": "Author",
         "Publisher": "Publisher"
@@ -100,8 +100,8 @@ def metadata():
   <edmx:DataServices>
     <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="BookModel">
       <EntityType Name="ISBN">
-        <Key><PropertyRef Name="Serial"/></Key>
-        <Property Name="Serial" Type="Edm.String" Nullable="false"/>
+        <Key><PropertyRef Name="ISBN_EX"/></Key>
+        <Property Name="ISBN_EX" Type="Edm.String" Nullable="false"/>
         <Property Name="Title" Type="Edm.String"/>
         <Property Name="Author" Type="Edm.String"/>
         <Property Name="PublishDate" Type="Edm.String"/>
