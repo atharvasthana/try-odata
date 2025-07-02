@@ -47,7 +47,7 @@ def query_books(filter_field=None, filter_value=None, skip=0, top=100):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    query = "SELECT * FROM isbn"
+    query = "SELECT * FROM books"
     params = []
 
     if filter_field and filter_value:
