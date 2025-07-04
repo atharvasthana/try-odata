@@ -10,36 +10,6 @@ app = Flask(__name__)
 CORS(app)
 
 DB_PATH = 'book.db'
-MEDIAFIRE_URL = 'https://www.mediafire.com/file/t9s45tsy496j5ov/book.db/file'  # ✅ Use your MediaFire file link
-
-# === Auto-download books.db if missing ===
-def download_db_if_missing():
-    if os.path.exists(DB_PATH):
-        return
-
-    print("📥 Downloading books.db from MediaFire...")
-    try:
-        session = requests.Session()
-        page = session.get(MEDIAFIRE_URL)
-        direct_link_url = page.url.replace("/file/", "/download/")
-        download_page = session.get(direct_link_url)
-
-        match = re.search(r'href="(https://download[^"]+)"', download_page.text)
-        if not match:
-            raise Exception("❌ Could not find direct download link.")
-
-        real_url = match.group(1)
-        r = session.get(real_url, stream=True)
-        if r.status_code == 200:
-            with open(DB_PATH, 'wb') as f:
-                for chunk in r.iter_content(32768):
-                    f.write(chunk)
-            print("✅ books.db downloaded successfully.")
-        else:
-            raise Exception(f"❌ Download failed with status {r.status_code}")
-    except Exception as e:
-        print(f"🔥 Failed to download books.db: {e}")
-        exit(1)
 
 # === SQLite Query ===
 def query_books(filter_field=None, filter_value=None, skip=0, top=100):
