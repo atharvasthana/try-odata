@@ -9,7 +9,7 @@ This project provides a live OData 4.0-compliant API built with Flask to serve I
 - ✅ Serves 10,000+ ISBN records from a JSON file
 - ✅ Exposes an **OData 4.0 API** endpoint with `$metadata` and data routes
 - ✅ Hosted for free on [Render](https://render.com)
-- ✅ Pulls large data dynamically from **Google Drive** at build time via `.sh` script
+- ✅ used github lfs for storing sqlite databse and realtime soql queries
 - ✅ Fully compatible with **Salesforce Connect** External Data Source
 - ✅ Supports OData operations:  
   - `$top`, `$skip` for pagination  
