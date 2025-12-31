@@ -93,5 +93,6 @@ def home():
 
 # === Start ===
 if __name__ == '__main__':
-    download_db_if_missing()
+    
     app.run(host='0.0.0.0', port=10000)
+
