@@ -19,7 +19,7 @@ def query_books(filter_field=None, filter_value=None, skip=0, top=100):
 
     query = "SELECT * FROM books"
     params = []
-
+    print("Branch Testing")
     if filter_field and filter_value:
         query += f" WHERE LOWER({filter_field}) = LOWER(?)"
         params.append(filter_value)
